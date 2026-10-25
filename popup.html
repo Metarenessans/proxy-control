@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <title>ProxyControl</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="popup-body">
+  <div class="popup-container">
+    <header style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <h1 style="font-size: 1.4rem;">ProxyControl</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="lang-switch" id="lang-switch" title="Language / Язык">
+          <button type="button" class="lang-btn" data-lang="ru">RU</button>
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+        </div>
+        <div class="status-pill inactive" id="status-indicator">
+          <span class="dot"></span>
+          <span id="status-text">Выкл</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Controls Panel -->
+    <div class="panel" style="padding: 12px 16px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <div>
+          <div data-i18n="enableProxy" style="font-weight: 600; font-size: 0.95rem;">Включить прокси-сервер</div>
+          <div data-i18n="enableProxyDesc" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 1px;">Основной выключатель прокси</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="main-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div style="height: 1px; background: var(--border-color);"></div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+        <div>
+          <div data-i18n="globalMode" style="font-weight: 600; font-size: 0.95rem;">Глобальный режим</div>
+          <div data-i18n="globalModeDesc" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 1px;">Проксировать все сайты (не только выбранные)</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="global-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Global Mode Banner -->
+    <div id="global-banner" class="global-banner" style="display: none;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: var(--accent-color);">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="2" y1="12" x2="22" y2="12"></line>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      </svg>
+      <span data-i18n="globalBannerText">Весь трафик направляется через прокси</span>
+    </div>
+
+    <!-- Search box -->
+    <div style="margin-bottom: 12px;">
+      <input type="text" id="search-tabs" class="search-box" data-i18n-placeholder="searchPlaceholder" placeholder="Поиск по доменам...">
+    </div>
+
+    <!-- Add domain from the active tab -->
+    <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+      <button id="add-domain-btn" class="btn" data-i18n="addCurrentTabDomain" style="width: 100%; padding: 0 16px; font-size: 0.9rem; height: 38px; border-radius: 8px;">Добавить домен текущей вкладки</button>
+    </div>
+
+    <!-- List of Added Proxy Domains -->
+    <div class="panel" style="padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column;">
+      <h2 data-i18n="chosenProxyDomains" style="font-size: 1rem; margin-bottom: 8px;">Выбранные прокси-домены</h2>
+      <div class="domain-list" id="added-domains-list" style="max-height: 140px;">
+        <div class="empty-state" data-i18n="noChosenDomains">Нет выбранных доменов</div>
+      </div>
+    </div>
+
+    <!-- Grouped tabs & Toggle switches -->
+    <div class="panel" style="padding: 12px; flex-grow: 1; display: flex; flex-direction: column;">
+      <h2 data-i18n="allOpenDomains" style="font-size: 1rem; margin-bottom: 8px;">Все открытые домены</h2>
+      <div class="domain-list" id="domain-list" style="max-height: 200px;">
+        <div class="empty-state" data-i18n="loadingTabs">Загрузка вкладок...</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-nav">
+      <button class="btn-link" id="open-options-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+          </path>
+        </svg>
+        <span data-i18n="proxySettings">Настройки прокси</span>
+      </button>
+      <span style="font-size: 0.75rem; color: var(--text-secondary); align-self: center;">v1.0</span>
+    </div>
+  </div>
+
+  <script src="i18n.js"></script>
+  <script src="popup.js"></script>
+</body>
+
+</html>
