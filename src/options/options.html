@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <title data-i18n="optionsPageTitle">Настройки ProxyControl</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <h1>ProxyControl</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="lang-switch" id="lang-switch" title="Language / Язык">
+          <button type="button" class="lang-btn" data-lang="ru">RU</button>
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+        </div>
+        <div class="status-pill inactive" id="status-indicator">
+          <span class="dot"></span>
+          <span id="status-text">Прокси выключен</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Текущий прокси -->
+    <div class="panel">
+      <h2 data-i18n="currentProxy">Текущий прокси</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="tableHash">#</th>
+              <th data-i18n="tableType">Тип</th>
+              <th data-i18n="tableIp">IP-адрес</th>
+              <th data-i18n="tablePort">Порт</th>
+              <th data-i18n="tableLogin">Логин</th>
+              <th data-i18n="tablePassword">Пароль</th>
+              <th data-i18n="tableActions">Действия</th>
+            </tr>
+          </thead>
+          <tbody id="proxy-list-body">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-secondary);" data-i18n="proxyNotConfigured">Прокси не настроен</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-container-grid">
+      <!-- Добавить новый прокси -->
+      <div class="panel">
+        <h2 data-i18n="addNewProxy">Добавить новый прокси</h2>
+        <form id="proxy-form" class="panel-flex-form">
+          <div class="form-grid">
+            <div class="form-group form-full">
+              <label for="proxy-ip" data-i18n="proxyIpLabel">IP-адрес прокси</label>
+              <input type="text" id="proxy-ip" data-i18n-placeholder="proxyIpPlaceholder" placeholder="например, ip" required>
+            </div>
+            <div class="form-group form-full">
+              <label for="proxy-port" data-i18n="proxyPortLabel">Порт прокси</label>
+              <input type="number" id="proxy-port" data-i18n-placeholder="proxyPortPlaceholder" placeholder="например, port" required>
+            </div>
+            <div class="form-group">
+              <label for="proxy-login" data-i18n="proxyLoginLabel">Логин от прокси</label>
+              <input type="text" id="proxy-login" data-i18n-placeholder="proxyLoginPlaceholder" placeholder="Логин (опционально)">
+            </div>
+            <div class="form-group">
+              <label for="proxy-password" data-i18n="proxyPassLabel">Пароль от прокси</label>
+              <input type="password" id="proxy-password" data-i18n-placeholder="proxyPassPlaceholder" placeholder="Пароль (опционально)">
+            </div>
+          </div>
+          <button type="submit" class="btn" style="width: 100%; margin-top: 16px;">
+            <span data-i18n="saveProxyBtn">Добавить новый прокси</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Добавить новый прокси (быстро) -->
+      <div class="panel">
+        <h2 data-i18n="quickImport">Добавить новый прокси (быстро)</h2>
+        <div class="panel-flex-form">
+          <div class="form-group">
+            <label for="fast-import" data-i18n="quickImportLabel">Вставьте строку в формате ip:port или ip:port@login:password</label>
+            <textarea id="fast-import" class="fast-import-box" style="margin-top: 8px; height: 164px;"
+              data-i18n-placeholder="quickImportPlaceholder"
+              placeholder="ip:port&#10;или&#10;socks5://username:password@ip:port&#10;или&#10;http://ip:port@username:password"></textarea>
+            <div class="hint" data-i18n="quickImportHint">Поддерживается автоопределение формата</div>
+          </div>
+          <button type="button" id="fast-btn" class="btn" style="width: 100%; margin-top: 16px;">
+            <span data-i18n="quickImportBtn">Добавить новый прокси</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">
+    <span id="toast-message">Настройки успешно сохранены!</span>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+
+</html>

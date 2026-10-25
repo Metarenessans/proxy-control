@@ -1,12 +1,14 @@
+import type { ProxyConfig, StorageData } from '../types';
+
 // Stores credentials for webRequest proxy authentication
-let currentProxyConfig = null;
-let cachedIncludedDomains = []; // Cache for quick lookup in webRequest
+let currentProxyConfig: ProxyConfig | null = null;
+let cachedIncludedDomains: string[] = []; // Cache for quick lookup in webRequest
 
 // Discovered domains in memory
-let discoveredDomainsSet = new Set();
+const discoveredDomainsSet = new Set<string>();
 
 // Immediately preload credentials and state upon Service Worker start
-chrome.storage.local.get(['proxyConfig', 'includedDomains', 'enabled'], (data) => {
+chrome.storage.local.get(['proxyConfig', 'includedDomains', 'enabled'], (data: StorageData) => {
   if (data.proxyConfig) {
     currentProxyConfig = data.proxyConfig;
   }
@@ -27,7 +29,7 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 let isCreatingOffscreen = false;
-async function ensureKeepAlive(enable) {
+async function ensureKeepAlive(enable: boolean): Promise<void> {
   if (!chrome.offscreen || typeof chrome.offscreen.hasDocument !== 'function') return;
   try {
     const hasDoc = await chrome.offscreen.hasDocument();
@@ -37,7 +39,7 @@ async function ensureKeepAlive(enable) {
         try {
           await chrome.offscreen.createDocument({
             url: 'offscreen.html',
-            reasons: ['BLOBS'],
+            reasons: [chrome.offscreen.Reason.BLOBS],
             justification: 'Keep service worker active to reliably authenticate proxy requests'
           });
           console.log('[ProxyControl] Keep-alive offscreen document started.');
@@ -59,8 +61,8 @@ async function ensureKeepAlive(enable) {
 // Alarm for syncing discovered domains to storage every 5 minutes (as fallback)
 chrome.alarms.create('syncDiscoveredDomains', { periodInMinutes: 5 });
 
-let syncTimeout = null;
-function triggerImmediateSync() {
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+function triggerImmediateSync(): void {
   if (syncTimeout) clearTimeout(syncTimeout);
   syncTimeout = setTimeout(() => {
     syncDiscoveredDomains();
@@ -74,13 +76,13 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-function syncDiscoveredDomains() {
+function syncDiscoveredDomains(): void {
   if (discoveredDomainsSet.size === 0) return;
-  
-  chrome.storage.local.get(['discoveredDomains'], (data) => {
-    let stored = data.discoveredDomains || [];
+
+  chrome.storage.local.get(['discoveredDomains'], (data: StorageData) => {
+    const stored = data.discoveredDomains || [];
     let updated = false;
-    for (let d of discoveredDomainsSet) {
+    for (const d of discoveredDomainsSet) {
       if (!stored.includes(d)) {
         stored.push(d);
         updated = true;
@@ -101,23 +103,22 @@ function syncDiscoveredDomains() {
 // Intercept requests and discover sub-resources
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    // Only care if we have an initiator
     if (!details.initiator) return;
-    
+
     try {
       const initiatorUrl = new URL(details.initiator);
       const initiatorHost = initiatorUrl.hostname;
       const requestUrl = new URL(details.url);
       const requestHost = requestUrl.hostname;
-      
+
       // If the request is for the same host, ignore
       if (initiatorHost === requestHost || requestHost.endsWith('.' + initiatorHost)) return;
-      
+
       // Check if initiator is in our includedDomains
-      let isProxiedInitiator = cachedIncludedDomains.some(domain => 
-        initiatorHost === domain || initiatorHost.endsWith('.' + domain)
+      const isProxiedInitiator = cachedIncludedDomains.some(
+        (domain) => initiatorHost === domain || initiatorHost.endsWith('.' + domain)
       );
-      
+
       if (isProxiedInitiator) {
         // Track the requested resource domain (if it's not already tracked)
         if (!discoveredDomainsSet.has(requestHost)) {
@@ -126,11 +127,11 @@ chrome.webRequest.onBeforeRequest.addListener(
           triggerImmediateSync();
         }
       }
-    } catch(e) {
+    } catch (e) {
       console.error('[ProxyControl] Error in onBeforeRequest discovery:', e);
     }
   },
-  { urls: ["<all_urls>"] }
+  { urls: ['<all_urls>'] }
 );
 
 // Load config and apply settings on launch
@@ -145,7 +146,7 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 // Listener for settings change events
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   console.log('[ProxyControl] Message received in background worker:', request);
   if (request.action === 'updateProxySettings') {
     updateProxySettings();
@@ -154,16 +155,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Configure the proxy using chrome.proxy API
-function updateProxySettings() {
+export function updateProxySettings(): void {
   console.log('[ProxyControl] Fetching current config from storage to apply settings...');
-  chrome.storage.local.get(['proxyConfig', 'enabled', 'globalMode', 'includedDomains', 'discoveredDomains'], (data) => {
+  chrome.storage.local.get(['proxyConfig', 'enabled', 'globalMode', 'includedDomains', 'discoveredDomains'], (data: StorageData) => {
     const proxyConfig = data.proxyConfig;
     const enabled = data.enabled !== false;
     const globalMode = data.globalMode === true;
     const includedDomains = data.includedDomains || [];
     const discoveredDomains = data.discoveredDomains || [];
-    
-    console.log('[ProxyControl] Loaded state:', { enabled, globalMode, includedDomainsCount: includedDomains.length, discoveredDomainsCount: discoveredDomains.length });
+
+    console.log('[ProxyControl] Loaded state:', {
+      enabled,
+      globalMode,
+      includedDomainsCount: includedDomains.length,
+      discoveredDomainsCount: discoveredDomains.length
+    });
 
     // Update cache for webRequest analyzer
     cachedIncludedDomains = includedDomains;
@@ -195,7 +201,7 @@ function updateProxySettings() {
     let pacScheme = 'PROXY';
     if (proxyConfig.type === 'socks5') {
       pacScheme = 'SOCKS5';
-    } else if (proxyConfig.type === 'socks4' || proxyConfig.type === 'socks') {
+    } else if (proxyConfig.type === 'socks4') {
       pacScheme = 'SOCKS';
     } else if (proxyConfig.type === 'https') {
       pacScheme = 'HTTPS';
@@ -213,20 +219,18 @@ function FindProxyForURL(url, host) {
 }
 `;
     } else {
-      // PAC Script generation: 
-      // Route matching domains to proxy, others DIRECT.
-      const AUTO_INCLUDES = {
+      const AUTO_INCLUDES: Record<string, string[]> = {
         'youtube.com': ['googlevideo.com', 'gvt1.com', 'ytimg.com', 'ggpht.com'],
         'music.youtube.com': ['googlevideo.com', 'gvt1.com', 'ytimg.com', 'ggpht.com'],
         'chatgpt.com': ['openai.com', 'oaistatic.com', 'oaiusercontent.com'],
         'openai.com': ['chatgpt.com', 'oaistatic.com', 'oaiusercontent.com']
       };
 
-      let expandedDomains = new Set([...includedDomains, ...discoveredDomains]);
-      includedDomains.forEach(domain => {
+      const expandedDomains = new Set<string>([...includedDomains, ...discoveredDomains]);
+      includedDomains.forEach((domain) => {
         for (const [trigger, related] of Object.entries(AUTO_INCLUDES)) {
           if (domain === trigger || domain.endsWith('.' + trigger)) {
-            related.forEach(r => expandedDomains.add(r));
+            related.forEach((r) => expandedDomains.add(r));
           }
         }
       });
@@ -236,7 +240,7 @@ function FindProxyForURL(url, host) {
       if (finalDomains.length === 0) {
         pacConditions = 'if (false';
       } else {
-        const matchStatements = finalDomains.map(domain => {
+        const matchStatements = finalDomains.map((domain) => {
           return `shExpMatch(host, "${domain}") || shExpMatch(host, "*.${domain}")`;
         });
         pacConditions += matchStatements.join(' || ');
@@ -250,8 +254,8 @@ function FindProxyForURL(url, host) {
 `;
     }
 
-    const config = {
-      mode: "pac_script",
+    const config: chrome.proxy.ProxyConfig = {
+      mode: 'pac_script',
       pacScript: {
         data: pacScript
       }
@@ -272,25 +276,25 @@ function FindProxyForURL(url, host) {
 }
 
 // Track authentication attempts per request ID to avoid retry loops on bad credentials
-const authAttemptCounts = new Map();
+const authAttemptCounts = new Map<string, number>();
 
 chrome.webRequest.onCompleted.addListener(
   (details) => {
     authAttemptCounts.delete(details.requestId);
   },
-  { urls: ["<all_urls>"] }
+  { urls: ['<all_urls>'] }
 );
 
 // Fallback to capture proxy auth failures or bad proxy state
 chrome.webRequest.onErrorOccurred.addListener(
   (details) => {
     authAttemptCounts.delete(details.requestId);
-    if (details.error === "net::ERR_PROXY_CONNECTION_FAILED" || details.error === "net::ERR_TUNNEL_CONNECTION_FAILED") {
+    if (details.error === 'net::ERR_PROXY_CONNECTION_FAILED' || details.error === 'net::ERR_TUNNEL_CONNECTION_FAILED') {
       console.warn(`[ProxyControl] Proxy network connection error detected ("${details.error}") for URL: ${details.url}. Re-applying configuration...`);
       updateProxySettings();
     }
   },
-  { urls: ["<all_urls>"] }
+  { urls: ['<all_urls>'] }
 );
 
 // Proxy Authentication
@@ -304,9 +308,11 @@ chrome.webRequest.onAuthRequired.addListener(
       requestId: details.requestId
     });
 
+    if (!callback) return;
+
     // Only authenticate for proxy challenges
     if (!details.isProxy) {
-      callback();
+      callback({});
       return;
     }
 
@@ -317,11 +323,11 @@ chrome.webRequest.onAuthRequired.addListener(
     if (attempts > 2) {
       console.warn('[ProxyControl] Authentication failed after 2 attempts for requestId:', details.requestId);
       authAttemptCounts.delete(details.requestId);
-      callback();
+      callback({});
       return;
     }
 
-    const provideAuth = (cfg) => {
+    const provideAuth = (cfg: ProxyConfig | null): boolean => {
       if (cfg && cfg.username && cfg.password) {
         console.log('[ProxyControl] Supplying stored proxy credentials for authentication:', cfg.username);
         callback({
@@ -341,8 +347,7 @@ chrome.webRequest.onAuthRequired.addListener(
     }
 
     // 2. If memory was wiped during cold wake-up, fetch from storage asynchronously
-    // DO NOT call callback() empty before checking storage!
-    chrome.storage.local.get(['proxyConfig'], (data) => {
+    chrome.storage.local.get(['proxyConfig'], (data: StorageData) => {
       if (data.proxyConfig) {
         currentProxyConfig = data.proxyConfig;
         if (provideAuth(data.proxyConfig)) {
@@ -350,12 +355,9 @@ chrome.webRequest.onAuthRequired.addListener(
         }
       }
       console.warn('[ProxyControl] No matching proxy credentials found in storage for challenge.');
-      callback();
+      callback({});
     });
   },
-  { urls: ["<all_urls>"] },
-  ["asyncBlocking"]
+  { urls: ['<all_urls>'] },
+  ['asyncBlocking']
 );
-
-
-

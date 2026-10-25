@@ -1,6 +1,6 @@
-﻿let port = null;
+let port: chrome.runtime.Port | null = null;
 
-function connect() {
+function connect(): void {
   try {
     port = chrome.runtime.connect({ name: 'keepAlive' });
     port.onDisconnect.addListener(() => {

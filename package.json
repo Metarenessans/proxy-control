@@ -1,0 +1,31 @@
+{
+  "name": "proxy-control",
+  "version": "1.1.0",
+  "description": "Smart Chromium Proxy Controller written in TypeScript (Manifest V3)",
+  "type": "module",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "build": "tsc --noEmit && node build.mjs",
+    "bundle": "node build.mjs"
+  },
+  "keywords": [
+    "chrome-extension",
+    "proxy",
+    "chromium",
+    "manifest-v3",
+    "typescript",
+    "i18n",
+    "pac"
+  ],
+  "author": "Oleg G. (@Metarenessans)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Metarenessans/proxy-control.git"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.312",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.2"
+  }
+}

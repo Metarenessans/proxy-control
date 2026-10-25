@@ -1,5 +1,6 @@
-// i18n (Internationalization) for ProxyControl Extension
-const I18N_DATA = {
+import type { Language } from '../types';
+
+export const I18N_DATA = {
   ru: {
     // Popup
     statusOff: 'Выкл',
@@ -116,42 +117,50 @@ const I18N_DATA = {
     toastEnterString: 'Please enter a proxy configuration string',
     toastInvalidFormat: 'Invalid string format. Please verify your input.'
   }
-};
+} as const;
 
-let currentLang = 'ru';
+export type TranslationKey = keyof typeof I18N_DATA.ru;
 
-function getTranslation(key, params = {}) {
-  const dict = I18N_DATA[currentLang] || I18N_DATA.ru;
-  let text = dict[key] || (I18N_DATA.ru[key] || key);
+let currentLang: Language = 'ru';
+
+export function getCurrentLanguage(): Language {
+  return currentLang;
+}
+
+export function getTranslation(key: TranslationKey, params: Record<string, string | number> = {}): string {
+  const dict = I18N_DATA[currentLang] ?? I18N_DATA.ru;
+  let text: string = dict[key] ?? I18N_DATA.ru[key] ?? key;
   for (const [pKey, pVal] of Object.entries(params)) {
-    text = text.replace(new RegExp(`\\{${pKey}\\}`, 'g'), pVal);
+    text = text.replace(new RegExp(`\\{${pKey}\\}`, 'g'), String(pVal));
   }
   return text;
 }
 
-function applyI18nToDOM() {
+export function applyI18nToDOM(): void {
   document.documentElement.lang = currentLang;
 
-  // Translate elements with data-i18n
-  document.querySelectorAll('[data-i18n]').forEach((el) => {
-    const key = el.getAttribute('data-i18n');
-    el.textContent = getTranslation(key);
+  document.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n') as TranslationKey | null;
+    if (key) {
+      el.textContent = getTranslation(key);
+    }
   });
 
-  // Translate placeholders with data-i18n-placeholder
-  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    el.placeholder = getTranslation(key);
+  document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('[data-i18n-placeholder]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-placeholder') as TranslationKey | null;
+    if (key) {
+      el.placeholder = getTranslation(key);
+    }
   });
 
-  // Translate titles with data-i18n-title
-  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
-    const key = el.getAttribute('data-i18n-title');
-    el.title = getTranslation(key);
+  document.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-title') as TranslationKey | null;
+    if (key) {
+      el.title = getTranslation(key);
+    }
   });
 
-  // Update active state of language buttons
-  document.querySelectorAll('.lang-btn').forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>('.lang-btn').forEach((btn) => {
     if (btn.getAttribute('data-lang') === currentLang) {
       btn.classList.add('active');
     } else {
@@ -160,52 +169,49 @@ function applyI18nToDOM() {
   });
 }
 
-function setLanguage(lang, onLangChangeCallback) {
+export function setLanguage(lang: Language, onLangChangeCallback?: (lang: Language) => void): void {
   if (lang !== 'ru' && lang !== 'en') lang = 'ru';
   currentLang = lang;
   chrome.storage.local.set({ language: lang }, () => {
     applyI18nToDOM();
-    if (typeof onLangChangeCallback === 'function') {
+    if (onLangChangeCallback) {
       onLangChangeCallback(currentLang);
     }
   });
 }
 
-function initI18n(onLangChangeCallback) {
-  chrome.storage.local.get(['language'], (res) => {
+export function initI18n(onLangChangeCallback?: (lang: Language) => void): void {
+  chrome.storage.local.get(['language'], (res: { language?: Language }) => {
     if (res && (res.language === 'en' || res.language === 'ru')) {
       currentLang = res.language;
     } else {
-      // Default to Russian if browser is Russian, else English
       const browserLang = (navigator.language || '').toLowerCase();
       currentLang = browserLang.startsWith('ru') ? 'ru' : 'en';
     }
 
     applyI18nToDOM();
 
-    // Attach listeners to language buttons
-    document.querySelectorAll('.lang-btn').forEach((btn) => {
+    document.querySelectorAll<HTMLButtonElement>('.lang-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const selectedLang = btn.getAttribute('data-lang');
-        if (selectedLang !== currentLang) {
+        const selectedLang = btn.getAttribute('data-lang') as Language | null;
+        if (selectedLang && selectedLang !== currentLang) {
           setLanguage(selectedLang, onLangChangeCallback);
         }
       });
     });
 
-    if (typeof onLangChangeCallback === 'function') {
+    if (onLangChangeCallback) {
       onLangChangeCallback(currentLang);
     }
   });
 
-  // Listen for changes from other extension pages
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.language) {
-      const newLang = changes.language.newValue;
+      const newLang = changes.language.newValue as Language | undefined;
       if (newLang && newLang !== currentLang) {
         currentLang = newLang;
         applyI18nToDOM();
-        if (typeof onLangChangeCallback === 'function') {
+        if (onLangChangeCallback) {
           onLangChangeCallback(currentLang);
         }
       }

@@ -1,11 +1,12 @@
-# ProxyControl — Smart Chromium Proxy Controller
+# ProxyControl — Smart Chromium Proxy Controller (TypeScript)
 
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)
 ![Manifest Version](https://img.shields.io/badge/Manifest-V3-brightgreen.svg)
 ![Platform](https://img.shields.io/badge/Platform-Chromium%20%7C%20Chrome%20%7C%20Edge%20%7C%20Brave-blue.svg)
 ![Bilingual](https://img.shields.io/badge/Language-Russian%20%7C%20English-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-purple.svg)
 
-**ProxyControl** is a high-performance, dark-mode Chromium browser extension (Manifest V3) for granular proxy management. It supports dynamic PAC (Proxy Auto-Configuration) script generation, selective per-domain proxy routing, global traffic redirection, automatic CDN/sub-resource domain discovery, and background Keep-Alive persistence.
+**ProxyControl** is a high-performance, dark-mode Chromium browser extension (Manifest V3) completely written in **TypeScript** for granular proxy management. It supports dynamic PAC (Proxy Auto-Configuration) script generation, selective per-domain proxy routing, global traffic redirection, automatic CDN/sub-resource domain discovery, and background Keep-Alive persistence.
 
 Developed by **Oleg G.** ([@Metarenessans](https://github.com/Metarenessans)).
 
@@ -13,9 +14,11 @@ Developed by **Oleg G.** ([@Metarenessans](https://github.com/Metarenessans)).
 
 ## Key Features
 
+- **Built with TypeScript & esbuild:** Clean, strictly typed architecture with sub-millisecond bundling and zero runtime overhead.
 - **Selective Domain Routing (Smart Proxying):** Route only specific domains through the proxy, while keeping all other traffic direct.
 - **Global Proxy Switch:** Single-click toggle to route 100% of network requests through the configured proxy server.
 - **Bilingual Interface (RU / EN):** One-click toggle between Russian and English in both the popup and settings panel, with instant synchronization.
+- **Reordered Ergonomic Layout:** «Add current tab domain» action is placed directly beneath master switches, immediately followed by domain search filtering.
 - **Auto-Discovery of Sub-Resources:** Analyzes incoming `webRequest` events to automatically discover external CDNs, authentication endpoints, and sub-resources spawned by proxied domains (e.g. YouTube CDN, OpenAI/ChatGPT assets).
 - **Active Tab One-Click Add:** Instantly add the current active tab's domain to your proxy inclusion list with a single click.
 - **Support for All Modern Protocols:**
@@ -39,18 +42,48 @@ Developed by **Oleg G.** ([@Metarenessans](https://github.com/Metarenessans)).
 
 ```text
 proxy-control/
-├── icons/               # Extension icons (16px, 32px, 48px, 128px)
-├── background.js        # Manifest V3 service worker (PAC generation & webRequest analyzer)
-├── i18n.js              # Internationalization module (RU / EN dictionary & DOM engine)
-├── manifest.json        # Chromium Extension Manifest V3 configuration
-├── offscreen.html       # Offscreen worker container for Keep-Alive heartbeat
-├── offscreen.js         # Keep-Alive ping cycle preventing SW termination
-├── options.html         # Proxy server settings & quick import interface
-├── options.js           # Settings page controller & proxy configuration logic
-├── popup.html           # Main extension popup interface
-├── popup.js             # Tab domain aggregator, search, and toggle controls
-├── style.css            # Dark glassmorphic stylesheet
-└── README.md
+├── src/
+│   ├── background/
+│   │   └── background.ts       # Manifest V3 service worker & PAC generator
+│   ├── popup/
+│   │   ├── popup.html          # Main popup markup (ergonomic layout)
+│   │   └── popup.ts            # Tab grouping, search, domain filtering, i18n
+│   ├── options/
+│   │   ├── options.html        # Settings & fast import interface
+│   │   └── options.ts          # Storage manager, parser, and toast notifications
+│   ├── offscreen/
+│   │   ├── offscreen.html      # Offscreen worker container
+│   │   └── offscreen.ts        # Keep-Alive heartbeat worker
+│   ├── i18n/
+│   │   └── index.ts            # Strongly-typed internationalization engine (RU/EN)
+│   ├── types/
+│   │   └── index.ts            # Shared TypeScript interfaces & types
+│   ├── styles/
+│   │   └── style.css           # Dark glassmorphic stylesheet
+│   ├── icons/                  # Extension icons (16px, 32px, 48px, 128px)
+│   └── manifest.json           # Chromium Extension Manifest V3 configuration
+├── dist/                       # Compiled production bundle ready for browser loading
+├── build.mjs                   # Fast esbuild compilation & asset bundler
+├── tsconfig.json               # Strict TypeScript configuration
+└── package.json
+```
+
+---
+
+## Development & Build Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Type-check with TypeScript compiler
+npm run type-check
+
+# Build and bundle into dist/
+npm run build
+
+# Fast bundle without type-check
+npm run bundle
 ```
 
 ---
@@ -59,17 +92,21 @@ proxy-control/
 
 ### 1. Load in Chrome / Brave / Edge / Chromium
 
-1. Clone or download this repository:
+1. Clone this repository:
    ```bash
    git clone https://github.com/Metarenessans/proxy-control.git
    ```
-2. Open your browser and navigate to the Extensions management page:
+2. Build the project (if downloading source):
+   ```bash
+   npm install && npm run build
+   ```
+3. Open your browser and navigate to the Extensions management page:
    - Chrome / Brave: `chrome://extensions/`
    - Edge: `edge://extensions/`
-3. Enable **Developer mode** (toggle in the top-right corner).
-4. Click **Load unpacked** (Загрузить распакованное расширение).
-5. Select the `proxy-control` folder.
-6. The **ProxyControl** shield icon will appear on your browser toolbar!
+4. Enable **Developer mode** (toggle in the top-right corner).
+5. Click **Load unpacked** (Загрузить распакованное расширение).
+6. Select the `dist` folder (or your unpacked extension directory).
+7. The **ProxyControl** shield icon will appear on your browser toolbar!
 
 ---
 
@@ -91,8 +128,8 @@ proxy-control/
 
 ## Tech Stack
 
-- **Platform:** Chromium Manifest V3
-- **Languages:** Vanilla JavaScript (ES2022+), HTML5, CSS3 Glassmorphism
+- **Languages:** TypeScript 5.8+, ES2022, HTML5, CSS3 Glassmorphism
+- **Build System:** esbuild, TypeScript Compiler (`tsc`)
 - **APIs Used:**
   - `chrome.proxy` (PAC scripts)
   - `chrome.webRequest` & `chrome.webRequestAuthProvider`

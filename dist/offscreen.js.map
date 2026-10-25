@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/offscreen/offscreen.ts"],
+  "sourcesContent": ["let port: chrome.runtime.Port | null = null;\n\nfunction connect(): void {\n  try {\n    port = chrome.runtime.connect({ name: 'keepAlive' });\n    port.onDisconnect.addListener(() => {\n      port = null;\n      setTimeout(connect, 1000);\n    });\n  } catch (e) {\n    setTimeout(connect, 1000);\n  }\n}\n\nconnect();\n\n// Send heartbeat every 20 seconds to prevent Chrome from terminating the service worker\nsetInterval(() => {\n  if (port) {\n    try {\n      port.postMessage({ type: 'ping' });\n    } catch (e) {\n      connect();\n    }\n  } else {\n    connect();\n  }\n}, 20000);\n"],
+  "mappings": ";;;AAAA,MAAI,OAAmC;AAEvC,WAAS,UAAgB;AACvB,QAAI;AACF,aAAO,OAAO,QAAQ,QAAQ,EAAE,MAAM,YAAY,CAAC;AACnD,WAAK,aAAa,YAAY,MAAM;AAClC,eAAO;AACP,mBAAW,SAAS,GAAI;AAAA,MAC1B,CAAC;AAAA,IACH,SAAS,GAAG;AACV,iBAAW,SAAS,GAAI;AAAA,IAC1B;AAAA,EACF;AAEA,UAAQ;AAGR,cAAY,MAAM;AAChB,QAAI,MAAM;AACR,UAAI;AACF,aAAK,YAAY,EAAE,MAAM,OAAO,CAAC;AAAA,MACnC,SAAS,GAAG;AACV,gBAAQ;AAAA,MACV;AAAA,IACF,OAAO;AACL,cAAQ;AAAA,IACV;AAAA,EACF,GAAG,GAAK;",
+  "names": []
+}
